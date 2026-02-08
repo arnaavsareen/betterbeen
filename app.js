@@ -1,6 +1,252 @@
 // ==================== BETTER BEEN - Travel Tracker App ====================
 // Uses real APIs: Natural Earth GeoJSON, RestCountries, GeoNames
 
+// ==================== SUPABASE CONFIG ====================
+// Credentials loaded from config.js (keep that file out of git)
+const SUPABASE_URL = typeof SUPABASE_CONFIG !== 'undefined' ? SUPABASE_CONFIG.url : '';
+const SUPABASE_ANON_KEY = typeof SUPABASE_CONFIG !== 'undefined' ? SUPABASE_CONFIG.anonKey : '';
+
+let supabaseClient = null;
+let currentUser = null;
+
+// Initialize Supabase
+function initSupabase() {
+    if (typeof window.supabase !== 'undefined' && SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Listen for auth state changes
+        supabaseClient.auth.onAuthStateChange((event, session) => {
+            currentUser = session?.user || null;
+            updateAuthUI();
+            
+            if (event === 'SIGNED_IN') {
+                loadUserData();
+            } else if (event === 'SIGNED_OUT') {
+                // Clear state and reload from localStorage
+                state.visitedCountries.clear();
+                state.visitedCities.clear();
+                state.recentVisits = [];
+                loadState();
+                updateMapStyles();
+                updateAllStats();
+                renderListView();
+            }
+        });
+        
+        // Check current session
+        checkSession();
+    }
+}
+
+async function checkSession() {
+    if (!supabaseClient) return;
+    
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    currentUser = session?.user || null;
+    updateAuthUI();
+    
+    if (currentUser) {
+        loadUserData();
+    }
+}
+
+function updateAuthUI() {
+    const authBtn = document.getElementById('auth-btn');
+    const authBtnText = document.getElementById('auth-btn-text');
+    
+    if (!authBtn) return;
+    
+    if (currentUser) {
+        authBtn.classList.add('logged-in');
+        authBtnText.textContent = currentUser.email.split('@')[0];
+        authBtn.title = currentUser.email;
+    } else {
+        authBtn.classList.remove('logged-in');
+        authBtnText.textContent = 'Sign in';
+        authBtn.title = 'Sign in';
+    }
+}
+
+// ==================== AUTH MODAL ====================
+function openAuthModal() {
+    if (currentUser) {
+        // Show user menu or sign out
+        signOut();
+        return;
+    }
+    
+    const modal = document.getElementById('auth-modal');
+    modal.classList.add('active');
+    setAuthMode('signin');
+}
+
+function closeAuthModal() {
+    const modal = document.getElementById('auth-modal');
+    modal.classList.remove('active');
+    clearAuthError();
+}
+
+function setAuthMode(mode) {
+    const title = document.getElementById('auth-modal-title');
+    const submitBtn = document.getElementById('auth-submit');
+    const switchText = document.getElementById('auth-switch-text');
+    const switchBtn = document.getElementById('auth-switch-btn');
+    
+    if (mode === 'signin') {
+        title.textContent = 'Sign In';
+        submitBtn.textContent = 'Sign In';
+        switchText.textContent = "Don't have an account?";
+        switchBtn.textContent = 'Sign Up';
+        switchBtn.dataset.mode = 'signup';
+    } else {
+        title.textContent = 'Sign Up';
+        submitBtn.textContent = 'Create Account';
+        switchText.textContent = 'Already have an account?';
+        switchBtn.textContent = 'Sign In';
+        switchBtn.dataset.mode = 'signin';
+    }
+}
+
+function showAuthError(message) {
+    const errorEl = document.getElementById('auth-error');
+    errorEl.textContent = message;
+    errorEl.classList.add('active');
+}
+
+function clearAuthError() {
+    const errorEl = document.getElementById('auth-error');
+    errorEl.textContent = '';
+    errorEl.classList.remove('active');
+}
+
+async function handleAuthSubmit(e) {
+    e.preventDefault();
+    
+    if (!supabaseClient) {
+        showAuthError('Supabase not configured. Please add your credentials.');
+        return;
+    }
+    
+    const email = document.getElementById('auth-email').value;
+    const password = document.getElementById('auth-password').value;
+    const submitBtn = document.getElementById('auth-submit');
+    const isSignUp = submitBtn.textContent === 'Create Account';
+    
+    submitBtn.disabled = true;
+    clearAuthError();
+    
+    try {
+        let result;
+        
+        if (isSignUp) {
+            result = await supabaseClient.auth.signUp({ email, password });
+        } else {
+            result = await supabaseClient.auth.signInWithPassword({ email, password });
+        }
+        
+        if (result.error) {
+            showAuthError(result.error.message);
+        } else {
+            closeAuthModal();
+            if (isSignUp) {
+                alert('Check your email for the confirmation link!');
+            }
+        }
+    } catch (error) {
+        showAuthError(error.message);
+    } finally {
+        submitBtn.disabled = false;
+    }
+}
+
+async function signInWithGoogle() {
+    if (!supabaseClient) {
+        showAuthError('Supabase not configured. Please add your credentials.');
+        return;
+    }
+    
+    const { error } = await supabaseClient.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+            redirectTo: window.location.origin
+        }
+    });
+    
+    if (error) {
+        showAuthError(error.message);
+    }
+}
+
+async function signOut() {
+    if (!supabaseClient) return;
+    
+    await supabaseClient.auth.signOut();
+    currentUser = null;
+    updateAuthUI();
+}
+
+// ==================== USER DATA SYNC ====================
+async function loadUserData() {
+    if (!supabaseClient || !currentUser) return;
+    
+    try {
+        const { data, error } = await supabaseClient
+            .from('travel_data')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .single();
+        
+        if (data) {
+            state.visitedCountries = new Set(data.countries || []);
+            state.visitedCities = new Map(
+                Object.entries(data.cities || {}).map(([k, v]) => [k, new Set(v)])
+            );
+            state.recentVisits = data.recent_visits || [];
+            
+            updateMapStyles();
+            updateAllStats();
+            renderListView();
+        }
+    } catch (error) {
+        console.log('No existing data found, starting fresh');
+    }
+}
+
+async function saveUserData() {
+    if (!supabaseClient || !currentUser) {
+        // Fall back to localStorage
+        saveState();
+        return;
+    }
+    
+    const citiesObj = {};
+    state.visitedCities.forEach((cities, country) => {
+        citiesObj[country] = [...cities];
+    });
+    
+    try {
+        const { error } = await supabaseClient
+            .from('travel_data')
+            .upsert({
+                user_id: currentUser.id,
+                countries: [...state.visitedCountries],
+                cities: citiesObj,
+                recent_visits: state.recentVisits,
+                updated_at: new Date().toISOString()
+            }, {
+                onConflict: 'user_id'
+            });
+        
+        if (error) {
+            console.error('Error saving to Supabase:', error);
+            saveState(); // Fallback to localStorage
+        }
+    } catch (error) {
+        console.error('Error saving to Supabase:', error);
+        saveState(); // Fallback to localStorage
+    }
+}
+
 // ==================== THEME ====================
 function initTheme() {
     const savedColor = localStorage.getItem('been-accent-color') || '#0a0a0a';
@@ -96,6 +342,7 @@ const state = {
 // ==================== INITIALIZATION ====================
 document.addEventListener('DOMContentLoaded', async () => {
     initTheme();
+    initSupabase();
     showLoadingState();
     await Promise.all([
         loadState(),
@@ -103,9 +350,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         initMap()
     ]);
     attachEventListeners();
+    attachAuthListeners();
     updateAllStats();
     hideLoadingState();
 });
+
+function attachAuthListeners() {
+    // Auth button
+    document.getElementById('auth-btn')?.addEventListener('click', openAuthModal);
+    
+    // Close auth modal
+    document.getElementById('auth-modal-close')?.addEventListener('click', closeAuthModal);
+    document.getElementById('auth-modal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'auth-modal') closeAuthModal();
+    });
+    
+    // Auth form
+    document.getElementById('auth-form')?.addEventListener('submit', handleAuthSubmit);
+    
+    // Switch between sign in/sign up
+    document.getElementById('auth-switch-btn')?.addEventListener('click', function() {
+        setAuthMode(this.dataset.mode);
+    });
+    
+    // Google sign in
+    document.getElementById('auth-google')?.addEventListener('click', signInWithGoogle);
+}
 
 function showLoadingState() {
     document.body.style.opacity = '0.5';
@@ -527,6 +797,7 @@ function loadState() {
 
 function saveState() {
     try {
+        // Always save to localStorage as backup
         localStorage.setItem('been-countries', JSON.stringify([...state.visitedCountries]));
         
         const citiesObj = {};
@@ -536,6 +807,11 @@ function saveState() {
         localStorage.setItem('been-cities', JSON.stringify(citiesObj));
         
         localStorage.setItem('been-recent', JSON.stringify(state.recentVisits));
+        
+        // Also save to Supabase if logged in
+        if (currentUser && supabaseClient) {
+            saveUserData();
+        }
     } catch (error) {
         console.error('Error saving state:', error);
     }
