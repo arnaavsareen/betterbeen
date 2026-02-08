@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>better been — Track Your Travels</title>
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <!-- App CSS -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <h1 class="logo">better been<span class="logo-dot">.</span></h1>
+      </div>
+
+      <nav class="header-nav">
+        <button class="nav-btn active" data-view="map">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="10" r="3"/>
+            <path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 6.9 8 11.7z"/>
+          </svg>
+          <span>Map</span>
+        </button>
+        <button class="nav-btn" data-view="stats">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 20V10M12 20V4M6 20v-6"/>
+          </svg>
+          <span>Stats</span>
+        </button>
+        <button class="nav-btn" data-view="list">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+            <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+          </svg>
+          <span>List</span>
+        </button>
+      </nav>
+
+      <div class="header-right">
+        <div class="search-container">
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+          </svg>
+          <input type="text" class="search-input" id="country-search" placeholder="Search countries...">
+          <div class="search-results" id="search-results"></div>
+        </div>
+        <button class="icon-btn" id="theme-btn" title="Change theme color">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <circle cx="12" cy="12" r="4" fill="currentColor"/>
+          </svg>
+          <input type="color" id="color-picker" value="#0a0a0a">
+        </button>
+        <button class="icon-btn" id="reset-btn" title="Reset all data">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+      <div class="stat-item">
+        <span class="stat-value" id="countries-visited">0</span>
+        <span class="stat-label">countries</span>
+      </div>
+      <div class="stat-divider">/</div>
+      <div class="stat-item">
+        <span class="stat-value" id="cities-visited">0</span>
+        <span class="stat-label">cities</span>
+      </div>
+      <div class="stat-divider">/</div>
+      <div class="stat-item">
+        <span class="stat-value" id="world-percentage">0%</span>
+        <span class="stat-label">of world</span>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Map View -->
+      <section class="view-panel active" id="map-view">
+        <div id="world-map"></div>
+        <div class="map-controls">
+          <button class="map-control-btn" id="zoom-in" title="Zoom in">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </button>
+          <button class="map-control-btn" id="zoom-out" title="Zoom out">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </button>
+          <button class="map-control-btn" id="zoom-reset" title="Reset view">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3.5 12a8.5 8.5 0 1 0 17 0 8.5 8.5 0 0 0-17 0Z"/>
+              <circle cx="12" cy="12" r="2"/>
+            </svg>
+          </button>
+        </div>
+      </section>
+
+      <!-- Stats View -->
+      <section class="view-panel" id="stats-view">
+        <div class="stats-content">
+          <div class="stats-hero">
+            <div class="progress-circle-container">
+              <svg class="progress-circle" viewBox="0 0 200 200">
+                <circle class="progress-bg" cx="100" cy="100" r="90"/>
+                <circle class="progress-fill" id="progress-ring" cx="100" cy="100" r="90"/>
+              </svg>
+              <div class="progress-inner">
+                <span class="progress-value" id="progress-percentage">0%</span>
+                <span class="progress-label">explored</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="stats-grid">
+            <div class="stats-card">
+              <h3>Continents</h3>
+              <div class="continents-list" id="continents-list"></div>
+            </div>
+            <div class="stats-card">
+              <h3>Recent Visits</h3>
+              <div class="recent-list" id="recent-list"></div>
+            </div>
+          </div>
+          
+          <div class="stats-card full-width">
+            <h3>By Region</h3>
+            <div class="regions-chart" id="regions-chart"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- List View -->
+      <section class="view-panel" id="list-view">
+        <div class="list-content">
+          <div class="list-header">
+            <h2>Your Travels</h2>
+            <div class="list-filters">
+              <button class="filter-btn active" data-filter="all">All</button>
+              <button class="filter-btn" data-filter="countries">Countries</button>
+              <button class="filter-btn" data-filter="cities">Cities</button>
+            </div>
+          </div>
+          <div class="visited-list" id="visited-list">
+            <div class="empty-state">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 6.9 8 11.7z"/>
+              </svg>
+              <p>Click on a country on the map to mark it as visited</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Country Modal -->
+    <div class="modal-overlay" id="country-modal">
+      <div class="modal">
+        <div class="modal-header">
+          <div class="modal-title-group">
+            <span class="modal-flag" id="modal-flag"></span>
+            <div>
+              <h2 id="modal-country-name">Country Name</h2>
+              <span class="modal-region" id="modal-region"></span>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button class="modal-action-btn danger" id="modal-unmark" title="Remove from visited">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+            </button>
+            <button class="modal-close" id="modal-close">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="modal-body">
+          <div class="modal-search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+            </svg>
+            <input type="text" id="city-search" placeholder="Search cities...">
+          </div>
+          <div class="modal-loading" id="modal-loading">
+            <div class="spinner"></div>
+            <span>Loading cities...</span>
+          </div>
+          <div id="modal-content"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <!-- App JS -->
+  <script src="app.js"></script>
+</body>
+
+</html>
+
