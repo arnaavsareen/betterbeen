@@ -20,6 +20,9 @@ function initSupabase() {
             updateAuthUI();
             
             if (event === 'SIGNED_IN') {
+                // Close auth modal and restore close button
+                showAuthCloseButton();
+                document.getElementById('auth-modal')?.classList.remove('active');
                 loadUserData();
             } else if (event === 'SIGNED_OUT') {
                 // Clear state and reload from localStorage
@@ -30,6 +33,10 @@ function initSupabase() {
                 updateMapStyles();
                 updateAllStats();
                 renderListView();
+                
+                // Close logout modal and show login modal
+                closeLogoutModal();
+                setTimeout(() => forceShowAuthModal(), 300);
             }
         });
         
@@ -47,7 +54,34 @@ async function checkSession() {
     
     if (currentUser) {
         loadUserData();
+    } else {
+        // Always show login modal if user is not signed in
+        setTimeout(() => {
+            if (!currentUser) {
+                forceShowAuthModal();
+            }
+        }, 500);
     }
+}
+
+function forceShowAuthModal() {
+    // Close any other modals first
+    document.getElementById('logout-modal')?.classList.remove('active');
+    document.getElementById('country-modal')?.classList.remove('active');
+    
+    // Show auth modal and hide close button (user must sign in)
+    const modal = document.getElementById('auth-modal');
+    const closeBtn = document.getElementById('auth-modal-close');
+    if (closeBtn) closeBtn.style.display = 'none';
+    
+    modal.classList.add('active');
+    setAuthMode('signin');
+}
+
+// Show close button after successful login
+function showAuthCloseButton() {
+    const closeBtn = document.getElementById('auth-modal-close');
+    if (closeBtn) closeBtn.style.display = '';
 }
 
 function updateAuthUI() {
@@ -70,17 +104,38 @@ function updateAuthUI() {
 // ==================== AUTH MODAL ====================
 function openAuthModal() {
     if (currentUser) {
-        // Show user menu or sign out
-        signOut();
+        // Show logout confirmation
+        openLogoutModal();
         return;
     }
     
+    closeAllModals();
     const modal = document.getElementById('auth-modal');
     modal.classList.add('active');
     setAuthMode('signin');
 }
 
+// ==================== LOGOUT CONFIRMATION ====================
+function openLogoutModal() {
+    closeAuthModal(); // Close auth modal if open
+    document.getElementById('logout-modal').classList.add('active');
+}
+
+function closeLogoutModal() {
+    document.getElementById('logout-modal').classList.remove('active');
+}
+
+function closeAllModals() {
+    document.getElementById('logout-modal')?.classList.remove('active');
+    document.getElementById('auth-modal')?.classList.remove('active');
+    document.getElementById('country-modal')?.classList.remove('active');
+}
+
 function closeAuthModal() {
+    // Don't allow closing if user isn't logged in - they must sign in
+    if (!currentUser) {
+        return;
+    }
     const modal = document.getElementById('auth-modal');
     modal.classList.remove('active');
     clearAuthError();
@@ -342,6 +397,7 @@ const state = {
 // ==================== INITIALIZATION ====================
 document.addEventListener('DOMContentLoaded', async () => {
     initTheme();
+    closeAllModals(); // Ensure all modals are closed on start
     initSupabase();
     showLoadingState();
     await Promise.all([
@@ -375,6 +431,17 @@ function attachAuthListeners() {
     
     // Google sign in
     document.getElementById('auth-google')?.addEventListener('click', signInWithGoogle);
+    
+    // Logout confirmation modal
+    document.getElementById('logout-modal-close')?.addEventListener('click', closeLogoutModal);
+    document.getElementById('logout-cancel')?.addEventListener('click', closeLogoutModal);
+    document.getElementById('logout-confirm')?.addEventListener('click', () => {
+        closeLogoutModal();
+        signOut();
+    });
+    document.getElementById('logout-modal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'logout-modal') closeLogoutModal();
+    });
 }
 
 function showLoadingState() {

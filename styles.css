@@ -774,6 +774,9 @@ input {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(8px);
   display: none;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
   align-items: center;
   justify-content: center;
   z-index: 500;
@@ -782,6 +785,9 @@ input {
 
 .modal-overlay.active {
   display: flex;
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
   animation: fadeIn 0.2s ease;
 }
 
@@ -1227,6 +1233,54 @@ input {
 
 .user-menu-item.danger {
   color: #dc2626;
+}
+
+/* Confirmation Modal */
+.confirm-modal {
+  max-width: 380px;
+}
+
+.confirm-message {
+  font-size: 0.9375rem;
+  color: var(--text);
+  line-height: 1.6;
+  margin-bottom: var(--space-lg);
+}
+
+.confirm-actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.confirm-btn {
+  flex: 1;
+  padding: var(--space-md);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.confirm-btn.cancel {
+  background: var(--bg-alt);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.confirm-btn.cancel:hover {
+  border-color: var(--text);
+}
+
+.confirm-btn.confirm {
+  background: #dc2626;
+  color: white;
+}
+
+.confirm-btn.confirm:hover {
+  background: #b91c1c;
 }
 
 /* ==================== ANIMATIONS ==================== */
