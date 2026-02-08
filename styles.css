@@ -460,36 +460,6 @@ input {
   stroke-dasharray: none !important;
 }
 
-.map-controls {
-  position: absolute;
-  bottom: var(--space-xl);
-  right: var(--space-xl);
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 3px;
-  box-shadow: var(--shadow);
-  z-index: 1000;
-}
-
-.map-control-btn {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text);
-  border-radius: var(--radius-sm);
-  transition: all var(--transition);
-}
-
-.map-control-btn:hover {
-  background: var(--bg-alt);
-}
-
 /* ==================== STATS VIEW ==================== */
 .stats-content {
   padding: var(--space-xl);
@@ -1380,11 +1350,6 @@ input {
   
   .visited-list {
     grid-template-columns: 1fr;
-  }
-  
-  .map-controls {
-    bottom: var(--space-md);
-    right: var(--space-md);
   }
   
   .modal-overlay {

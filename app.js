@@ -1222,18 +1222,6 @@ function attachEventListeners() {
         });
     });
     
-    // Map controls
-    document.getElementById('zoom-in')?.addEventListener('click', () => {
-        state.map?.zoomIn();
-    });
-    
-    document.getElementById('zoom-out')?.addEventListener('click', () => {
-        state.map?.zoomOut();
-    });
-    
-    document.getElementById('zoom-reset')?.addEventListener('click', () => {
-        state.map?.setView(CONFIG.MAP_CENTER, CONFIG.MAP_ZOOM);
-    });
     
     // Reset button
     document.getElementById('reset-btn')?.addEventListener('click', resetData);
