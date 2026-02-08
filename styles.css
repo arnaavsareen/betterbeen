@@ -1111,46 +1111,6 @@ input {
   text-decoration: underline;
 }
 
-.auth-divider {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
-  margin: var(--space-lg) 0;
-  color: var(--text-muted);
-  font-size: 0.75rem;
-}
-
-.auth-divider::before,
-.auth-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--border);
-}
-
-.auth-google {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-sm);
-  width: 100%;
-  padding: var(--space-md);
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  font-family: var(--font-body);
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text);
-  cursor: pointer;
-  transition: all var(--transition);
-}
-
-.auth-google:hover {
-  border-color: var(--text);
-  background: var(--bg-alt);
-}
-
 /* User menu dropdown */
 .user-menu {
   position: absolute;

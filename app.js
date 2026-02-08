@@ -214,23 +214,6 @@ async function handleAuthSubmit(e) {
     }
 }
 
-async function signInWithGoogle() {
-    if (!supabaseClient) {
-        showAuthError('Supabase not configured. Please add your credentials.');
-        return;
-    }
-    
-    const { error } = await supabaseClient.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-            redirectTo: window.location.origin
-        }
-    });
-    
-    if (error) {
-        showAuthError(error.message);
-    }
-}
 
 async function signOut() {
     if (!supabaseClient) return;
@@ -428,9 +411,6 @@ function attachAuthListeners() {
     document.getElementById('auth-switch-btn')?.addEventListener('click', function() {
         setAuthMode(this.dataset.mode);
     });
-    
-    // Google sign in
-    document.getElementById('auth-google')?.addEventListener('click', signInWithGoogle);
     
     // Logout confirmation modal
     document.getElementById('logout-modal-close')?.addEventListener('click', closeLogoutModal);
